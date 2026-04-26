@@ -41,8 +41,20 @@ const hasCover = image !== undefined && image !== null && image !== "";
 const coverWidth = "28%";
 
 const { remarkPluginFrontmatter } = await entry.render();
+
+const isDev = import.meta.env.DEV;
 ---
 <div class:list={["card-base flex flex-col-reverse md:flex-col w-full rounded-[var(--radius-large)] overflow-hidden relative", className]} style={style}>
+    {isDev && (
+        <button
+            type="button"
+            class="post-delete-btn"
+            data-slug={entry.slug}
+            data-title={title}
+            aria-label={`删除文章: ${title}`}
+            title="删除文章"
+        >×</button>
+    )}
     <div class:list={["pl-6 md:pl-9 pr-6 md:pr-2 pt-6 md:pt-7 pb-6 relative", {"w-full md:w-[calc(100%_-_52px_-_12px)]": !hasCover, "w-full md:w-[calc(100%_-_var(--coverWidth)_-_12px)]": hasCover}]}>
         <a href={url}
            class="transition group w-full block font-bold mb-3 text-3xl text-90
@@ -107,4 +119,77 @@ const { remarkPluginFrontmatter } = await entry.render();
 <div class="transition border-t-[1px] border-dashed mx-6 border-black/10 dark:border-white/[0.15] last:border-t-0 md:hidden"></div>
 
 <style define:vars={{coverWidth}}>
+    .post-delete-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 30;
+        width: 1.75rem;
+        height: 1.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        background: rgba(0, 0, 0, 0.35);
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 1.1rem;
+        line-height: 1;
+        font-weight: 300;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(6px);
+    }
+    :global(.card-base:hover) .post-delete-btn {
+        opacity: 1;
+    }
+    .post-delete-btn:hover {
+        background: rgba(220, 38, 38, 0.85);
+        color: white;
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.08);
+    }
+    .post-delete-btn:active {
+        transform: scale(0.92);
+    }
 </style>
+
+{isDev && (
+    <script>
+        document.addEventListener("click", async (e) => {
+            const target = e.target as HTMLElement | null;
+            const btn = target?.closest(".post-delete-btn") as HTMLButtonElement | null;
+            if (!btn) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const slug = btn.dataset.slug;
+            const title = btn.dataset.title || slug;
+            if (!slug) return;
+
+            if (!confirm(`确定删除《${title}》?\n\n源文件 src/content/posts/${slug}.md 会被删除,不可恢复。`)) {
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "...";
+
+            try {
+                const res = await fetch("/api/delete-post/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ slug }),
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                window.location.reload();
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = "×";
+                alert(`删除失败: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        });
+    </script>
+)}

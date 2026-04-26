@@ -1,0 +1,112 @@
+# Sveltia CMS 配置
+# 文档: https://github.com/sveltia/sveltia-cms
+
+# 本地后端：连接到 npx decap-server（端口 8081），直接读写硬盘上的 markdown 文件
+# 部署上线时再加 GitHub OAuth，把下面 backend 改成 name: github 并填 repo
+local_backend: true
+
+backend:
+  name: github
+  repo: yourname/jouinx-blog # TODO 部署上线时把这里改成你的 GitHub 仓库
+  branch: main
+
+# 媒体上传位置（封面图、文章里插的图等）
+media_folder: public/uploads
+public_folder: /uploads
+
+# 中文界面
+locale: zh_Hans
+
+# 集合定义
+collections:
+  # 文章集合
+  - name: posts
+    label: 文章
+    label_singular: 文章
+    folder: src/content/posts
+    create: true
+    delete: true
+    extension: md
+    format: yaml-frontmatter
+    slug: '{{slug}}'
+    summary: '{{title}}'
+    sortable_fields: [published, title]
+    view_filters:
+      - label: 草稿
+        field: draft
+        pattern: true
+      - label: 已发布
+        field: draft
+        pattern: false
+    fields:
+      - label: 标题
+        name: title
+        widget: string
+        required: true
+
+      - label: 发布日期
+        name: published
+        widget: datetime
+        format: YYYY-MM-DD
+        date_format: YYYY-MM-DD
+        time_format: false
+        picker_utc: false
+        default: ''
+
+      - label: 更新日期
+        name: updated
+        widget: datetime
+        format: YYYY-MM-DD
+        date_format: YYYY-MM-DD
+        time_format: false
+        picker_utc: false
+        required: false
+
+      - label: 草稿（勾选则不发布）
+        name: draft
+        widget: boolean
+        default: false
+        required: false
+
+      - label: 摘要描述
+        name: description
+        widget: text
+        required: false
+        default: ''
+
+      - label: 封面图
+        name: image
+        widget: image
+        required: false
+        default: ''
+        multiple: false
+
+      - label: 标签
+        name: tags
+        widget: list
+        required: false
+        default: []
+        summary: '{{fields.tag}}'
+        field: { label: 标签, name: tag, widget: string }
+
+      - label: 分类
+        name: category
+        widget: string
+        required: false
+        default: ''
+
+      - label: 正文
+        name: body
+        widget: markdown
+
+  # 特殊页面（关于页等）
+  - name: spec
+    label: 特殊页面
+    files:
+      - label: 关于页
+        name: about
+        file: src/content/spec/about.md
+        fields:
+          - label: 内容
+            name: body
+            widget: markdown

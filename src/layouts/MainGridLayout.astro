@@ -43,6 +43,15 @@ const mainPanelTop = siteConfig.banner.enable
 
 <Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle}>
 
+<!-- 页面动态背景视频 -->
+<div class="page-bg-wrap" aria-hidden="true">
+    <video class="page-bg-video" autoplay muted loop playsinline preload="auto"
+           disablepictureinpicture disableRemotePlayback>
+        <source src="/background.mp4" type="video/mp4" />
+    </video>
+    <div class="page-bg-overlay"></div>
+</div>
+
 <!-- Navbar -->
 <slot slot="head" name="head"></slot>
 <div id="top-row" class="z-50 pointer-events-none relative transition-all duration-700 max-w-[var(--page-width)] px-0 md:px-4 mx-auto" class:list={[""]}>
@@ -122,4 +131,56 @@ const mainPanelTop = siteConfig.banner.enable
         {!siteConfig.toc.enable && <div id="toc"></div>}
     </div>
 </div>
+
+<style is:global>
+    /* 让 html 背景透明，露出视频背景；卡片本身有自己的背景色不受影响 */
+    html { background: transparent !important; }
+
+    /* 隐藏 Navbar 顶部那条 onload 用的延伸色块（透明背景下会变成可见的小色块） */
+    #navbar > div.absolute { display: none !important; }
+
+    .page-bg-wrap {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        /* 兜底底色，视频未加载时不会白屏 */
+        background: #050507;
+    }
+    .page-bg-video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+        opacity: 0.55;
+        /* 不可交互，连带防止浏览器渲染原生控件浮层 */
+        pointer-events: none;
+    }
+    /* 兜底：浏览器原生媒体控件覆盖层（Edge 的下载/投屏图标）藏掉 */
+    .page-bg-video::-webkit-media-controls,
+    .page-bg-video::-webkit-media-controls-enclosure,
+    .page-bg-video::-internal-media-controls-overlay-cast-button {
+        display: none !important;
+        -webkit-appearance: none !important;
+    }
+    .page-bg-overlay {
+        position: absolute;
+        inset: 0;
+        /* 上下偏暗、中间稍透，保证文字可读且氛围感强 */
+        background:
+            linear-gradient(
+                180deg,
+                rgba(0, 0, 0, 0.65) 0%,
+                rgba(0, 0, 0, 0.35) 40%,
+                rgba(0, 0, 0, 0.45) 70%,
+                rgba(0, 0, 0, 0.75) 100%
+            );
+    }
+</style>
 </Layout>

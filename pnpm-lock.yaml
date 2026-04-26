@@ -50,6 +50,9 @@ importers:
       '@iconify-json/material-symbols':
         specifier: ^1.2.50
         version: 1.2.50
+      '@iconify-json/simple-icons':
+        specifier: ^1.2.79
+        version: 1.2.79
       '@iconify/svelte':
         specifier: ^4.2.0
         version: 4.2.0(svelte@5.39.8)
@@ -77,6 +80,9 @@ importers:
       markdown-it:
         specifier: ^14.1.0
         version: 14.1.0
+      marked:
+        specifier: ^18.0.2
+        version: 18.0.2
       mdast-util-to-string:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1265,6 +1271,9 @@ packages:
 
   '@iconify-json/material-symbols@1.2.50':
     resolution: {integrity: sha512-71tjHR70h46LHtBFab3fAd2V/wPTO7JMV5lKnRn3IcF303LaFgAlO0BZeTJDcmCv9d0snRZmnoLZAJVD7/eisw==}
+
+  '@iconify-json/simple-icons@1.2.79':
+    resolution: {integrity: sha512-aNyO7Fd1qej9oQfIyohYFRv0lhQLaZ+6UkK1c1qwax0MDPUOZOdq65MlU500kow97pD/W+b2u1And3e25eE24Q==}
 
   '@iconify/svelte@4.2.0':
     resolution: {integrity: sha512-fEl0T7SAPonK7xk6xUlRPDmFDZVDe2Z7ZstlqeDS/sS8ve2uyU+Qa8rTWbIqzZJlRvONkK5kVXiUf9nIc+6OOQ==}
@@ -3618,6 +3627,11 @@ packages:
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
+
+  marked@18.0.2:
+    resolution: {integrity: sha512-NsmlUYBS/Zg57rgDWMYdnre6OTj4e+qq/JS2ot3KrYLSoHLw+sDu0Nm1ZGpRgYAq6c+b1ekaY5NzVchMCQnzcg==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -6776,6 +6790,10 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
 
+  '@iconify-json/simple-icons@1.2.79':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify/svelte@4.2.0(svelte@5.39.8)':
     dependencies:
       '@iconify/types': 2.0.0
@@ -9428,6 +9446,8 @@ snapshots:
       uc.micro: 2.1.0
 
   markdown-table@3.0.4: {}
+
+  marked@18.0.2: {}
 
   math-intrinsics@1.1.0: {}
 

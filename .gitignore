@@ -29,3 +29,7 @@ yarn.lock
 # ide
 .idea
 *.iml
+
+# 大视频资源(本地放在 public/ 即可,部署时单独上传或换 LFS)
+# 不进 git 是为了不让 repo 体积爆炸
+public/*.mp4

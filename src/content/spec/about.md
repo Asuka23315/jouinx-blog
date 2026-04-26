@@ -1,9 +1,35 @@
-# About
-This is the demo site for [Fuwari](https://github.com/saicaca/fuwari).
+# 关于
 
-::github{repo="saicaca/fuwari"}
+## Jouïnx
 
-> ### Sources of images used in this site
-> - [Unsplash](https://unsplash.com/)
-> - [星と少女](https://www.pixiv.net/artworks/108916539) by [Stella](https://www.pixiv.net/users/93273965)
-> - [Rabbit - v1.4 Showcase](https://civitai.com/posts/586908) by [Rabbit_YourMajesty](https://civitai.com/user/Rabbit_YourMajesty)
+> *où la jouissance fait jinx*
+
+**Jouïnx** 是 *jouissance*（拉康意义上的"享乐"）与 *jinx* 的拼合——
+是某个享乐如何在主体身上凝结成征兆，
+也是那道难以驱散的、对自身的诅咒。
+
+## le Jinxé
+
+写一些关于
+**精神分析**、**文学**、**电影**、**游戏**、**动画**
+的笔记和片段。
+
+受拉康影响较深，但不囿于学派。
+
+> Arcane 的金克斯既是名字的来源，
+> 也是一种镜像的共鸣。
+
+## 这里写什么
+
+- 拉康精神分析的笔记、临床思考、文本细读
+- 文学与电影杂感
+- 叙事性游戏、动画、轻小说的散记
+- 偶尔的、不重要的日常
+
+## 联系
+
+侧边栏图标 → **豆瓣**、**Steam**、**Bilibili**、**邮箱**。
+
+---
+
+> 站点基于 [Fuwari](https://github.com/saicaca/fuwari) 主题搭建，做了较多自定义修改。

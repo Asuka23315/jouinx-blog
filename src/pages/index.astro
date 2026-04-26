@@ -1,0 +1,587 @@
+---
+import { profileConfig, siteConfig } from "../config";
+
+const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
+---
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" as="video" href="/hero-bg.mp4" />
+
+    <!-- 字体提前加载 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" />
+
+    <style>
+        /* 不论从哪进入，都先黑屏盖住封面，等视频准备好再淡出。统一体验 */
+        #reverse-overlay { opacity: 1; }
+        /* 标题始终静止在终态，不播 fadeInUp，避免任何位移 */
+        .title-block,
+        .title-block * {
+            animation: none !important;
+            transform: none !important;
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body class="cover-body">
+    <div class="cover-stage" id="cover-stage">
+        <!-- 原封面内容 -->
+        <div class="cover-content" id="cover-content">
+            <video class="bg-video" id="bg-video" autoplay muted loop playsinline preload="auto">
+                <source src="/hero-bg.mp4" type="video/mp4" />
+            </video>
+            <div class="overlay"></div>
+            <div class="vignette"></div>
+            <div class="paper-grain"></div>
+
+            <main class="content">
+                <div class="title-block">
+                    <p class="author-line">— {profileConfig.name} —</p>
+                    <h1 class="title">{siteConfig.title}</h1>
+                    <p class="subtitle">{siteConfig.subtitle}</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- 碎裂时动态填充 shard -->
+        <div class="shards-container" id="shards-container"></div>
+
+        <!-- 反向进入时的纯色遮罩，盖住正在加载的封面，再淡出 -->
+        <div class="reverse-overlay" id="reverse-overlay" aria-hidden="true"></div>
+    </div>
+
+    <script>
+        const coverContent = document.getElementById('cover-content') as HTMLElement;
+        const shardsContainer = document.getElementById('shards-container') as HTMLElement;
+        const video = document.getElementById('bg-video') as HTMLVideoElement;
+
+        let isShattering = false;
+        let scrollAccumulator = 0;
+
+        // === 入场动画：等视频首帧准备好（或超时兜底），淡出黑色遮罩 ===
+        // 不论从哪进入（首次访问、刷新、从 /posts/ 返回），统一体验
+        const overlay = document.getElementById('reverse-overlay') as HTMLElement;
+        let revealed = false;
+        const reveal = () => {
+            if (revealed) return;
+            revealed = true;
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    overlay.style.transition = 'opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1)';
+                    overlay.style.opacity = '0';
+                });
+            });
+        };
+
+        if (video && video.readyState >= 2) {
+            // 视频缓存命中或加载够快
+            reveal();
+        } else if (video) {
+            video.addEventListener('loadeddata', reveal, { once: true });
+            // 视频加载慢的兜底，最多等 800ms
+            setTimeout(reveal, 800);
+        } else {
+            reveal();
+        }
+
+        // === 把当前视频帧 + 暗角渐变烤到 canvas，作为碎片纹理 ===
+        function captureSnapshot(): string {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return '';
+
+            // 先用底色铺一层（视频还没加载时的兜底）
+            ctx.fillStyle = '#14110d';
+            ctx.fillRect(0, 0, w, h);
+
+            // 把视频按 cover 模式画上去
+            if (video && video.videoWidth > 0) {
+                const vw = video.videoWidth;
+                const vh = video.videoHeight;
+                const vRatio = vw / vh;
+                const sRatio = w / h;
+                let dw, dh, dx, dy;
+                if (vRatio > sRatio) {
+                    dh = h;
+                    dw = h * vRatio;
+                    dx = (w - dw) / 2;
+                    dy = 0;
+                } else {
+                    dw = w;
+                    dh = w / vRatio;
+                    dx = 0;
+                    dy = (h - dh) / 2;
+                }
+                try {
+                    ctx.drawImage(video, dx, dy, dw, dh);
+                } catch (e) {}
+            }
+
+            // 暗角渐变（与 .overlay 一致）
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, 'rgba(0, 0, 0, 0.55)');
+            grad.addColorStop(0.35, 'rgba(0, 0, 0, 0.15)');
+            grad.addColorStop(0.65, 'rgba(0, 0, 0, 0.25)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // 椭圆 vignette
+            const vg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.75);
+            vg.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
+            vg.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, w, h);
+
+            return canvas.toDataURL('image/jpeg', 0.85);
+        }
+
+        // === 以撞击点为圆心，生成放射状不规则多边形碎片 ===
+        function generateShards(cx: number, cy: number, w: number, h: number) {
+            // 让碎片半径足以覆盖屏幕最远的角落
+            const maxR = Math.max(
+                Math.hypot(cx, cy),
+                Math.hypot(w - cx, cy),
+                Math.hypot(cx, h - cy),
+                Math.hypot(w - cx, h - cy)
+            ) * 1.15;
+
+            const numSectors = 11;       // 角向切片数
+            const numRings = 3;          // 径向圈数（不含中心点）
+
+            // 角度（带微抖动，避免太规整）
+            const spokes: number[] = [];
+            for (let i = 0; i < numSectors; i++) {
+                const base = (i / numSectors) * Math.PI * 2;
+                const jit = (Math.random() - 0.5) * (Math.PI * 2 / numSectors) * 0.55;
+                spokes.push(base + jit);
+            }
+
+            // 半径（带微抖动）
+            const rings: number[] = [0];
+            for (let j = 1; j <= numRings; j++) {
+                const r = (j / numRings) * maxR;
+                const jit = (Math.random() - 0.5) * maxR * 0.18;
+                rings.push(Math.max(20, r + jit));
+            }
+
+            const shards: { points: number[][]; meanX: number; meanY: number }[] = [];
+
+            for (let i = 0; i < numSectors; i++) {
+                const a1 = spokes[i];
+                let a2 = spokes[(i + 1) % numSectors];
+                if (a2 < a1) a2 += Math.PI * 2;
+
+                for (let j = 0; j < rings.length - 1; j++) {
+                    const r1 = rings[j];
+                    const r2 = rings[j + 1];
+
+                    let points: number[][];
+                    if (r1 === 0) {
+                        // 中心三角片
+                        points = [
+                            [cx, cy],
+                            [cx + r2 * Math.cos(a1), cy + r2 * Math.sin(a1)],
+                            [cx + r2 * Math.cos(a2), cy + r2 * Math.sin(a2)],
+                        ];
+                    } else {
+                        points = [
+                            [cx + r1 * Math.cos(a1), cy + r1 * Math.sin(a1)],
+                            [cx + r2 * Math.cos(a1), cy + r2 * Math.sin(a1)],
+                            [cx + r2 * Math.cos(a2), cy + r2 * Math.sin(a2)],
+                            [cx + r1 * Math.cos(a2), cy + r1 * Math.sin(a2)],
+                        ];
+                    }
+
+                    const meanX = points.reduce((s, p) => s + p[0], 0) / points.length;
+                    const meanY = points.reduce((s, p) => s + p[1], 0) / points.length;
+                    shards.push({ points, meanX, meanY });
+                }
+            }
+            return shards;
+        }
+
+        function pointsToClipPath(points: number[][]): string {
+            return 'polygon(' + points.map((p) => `${p[0]}px ${p[1]}px`).join(', ') + ')';
+        }
+
+        // === 生成裂纹 SVG（沿所有碎片的边） ===
+        function buildCracksSvg(shards: { points: number[][] }[], w: number, h: number) {
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('class', 'cracks-overlay');
+            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            svg.setAttribute('preserveAspectRatio', 'none');
+            shards.forEach((s) => {
+                const poly = document.createElementNS(ns, 'polygon');
+                poly.setAttribute('points', s.points.map((p) => `${p[0]},${p[1]}`).join(' '));
+                poly.setAttribute('stroke', 'rgba(255, 255, 255, 0.85)');
+                poly.setAttribute('stroke-width', '0.8');
+                poly.setAttribute('stroke-linejoin', 'round');
+                poly.setAttribute('fill', 'none');
+                svg.appendChild(poly);
+            });
+            return svg;
+        }
+
+        // === 触发碎裂（cx, cy 是撞击点，相对视口） ===
+        function shatter(cx: number, cy: number) {
+            if (isShattering) return;
+            isShattering = true;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            video?.pause();
+            const snapshot = captureSnapshot();
+
+            const shards = generateShards(cx, cy, w, h);
+
+            // 1) 先把裂纹画上去，给"玻璃裂了但还没碎"那一瞬
+            const cracksSvg = buildCracksSvg(shards, w, h);
+            shardsContainer.appendChild(cracksSvg);
+            requestAnimationFrame(() => {
+                cracksSvg.classList.add('visible');
+            });
+
+            // 2) 创建 shard 元素（3D 立体感）
+            shards.forEach((shard) => {
+                const div = document.createElement('div');
+                div.className = 'shard';
+
+                // 每片不同角度的"光泽"线性渐变 + 截图（窄峰高光，像玻璃面反光）
+                const glintAngle = Math.floor(Math.random() * 360);
+                div.style.backgroundImage =
+                    `linear-gradient(${glintAngle}deg,` +
+                    ` rgba(255,255,255,0) 35%,` +
+                    ` rgba(255,255,255,0.55) 47%,` +
+                    ` rgba(225,245,255,0.7) 50%,` +
+                    ` rgba(255,255,255,0.55) 53%,` +
+                    ` rgba(255,255,255,0) 65%), ` +
+                    `url(${snapshot})`;
+                div.style.backgroundSize = `100% 100%, ${w}px ${h}px`;
+                div.style.backgroundPosition = '0 0, 0 0';
+                div.style.clipPath = pointsToClipPath(shard.points);
+                (div.style as any).webkitClipPath = pointsToClipPath(shard.points);
+
+                // 漂移方向
+                const dx = shard.meanX - cx;
+                const dy = shard.meanY - cy;
+                const dist = Math.hypot(dx, dy);
+                const ux = dist > 0.001 ? dx / dist : (Math.random() - 0.5);
+                const uy = dist > 0.001 ? dy / dist : (Math.random() - 0.5);
+
+                // 飘得慢一点，3D 翻转幅度更大
+                const driftAmount = 60 + Math.random() * 130;
+                const liftAmount = -14 - Math.random() * 32;
+                const driftZ = 140 + Math.random() * 320;        // 朝观众方向漂出更明显
+                const rotZ = (Math.random() - 0.5) * 35;
+                const rotX = (Math.random() - 0.5) * 100;        // 大幅上下翻转
+                const rotY = (Math.random() - 0.5) * 100;        // 大幅左右翻转
+                const delay = Math.random() * 200;
+                const duration = 1700 + Math.random() * 600;     // 1.7-2.3s，从容飘散
+
+                div.style.setProperty('--drift-x', `${ux * driftAmount}px`);
+                div.style.setProperty('--drift-y', `${uy * driftAmount + liftAmount}px`);
+                div.style.setProperty('--drift-z', `${driftZ}px`);
+                div.style.setProperty('--rot-z', `${rotZ}deg`);
+                div.style.setProperty('--rot-x', `${rotX}deg`);
+                div.style.setProperty('--rot-y', `${rotY}deg`);
+                div.style.transitionDelay = `${delay}ms`;
+                div.style.transitionDuration = `${duration}ms`;
+
+                shardsContainer.appendChild(div);
+            });
+
+            // 3) 标题独立淡出
+            coverContent.classList.add('shattered');
+
+            // 4) 裂纹闪现 ~110ms 后立刻开始飞散，连贯不脱节
+            setTimeout(() => {
+                cracksSvg.classList.remove('visible');
+                shardsContainer.classList.add('shattered');
+            }, 110);
+
+            // 5) 碎片飞了大半时，整页开始平滑淡出，避免硬切
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 0.55s cubic-bezier(0.4, 0, 0.6, 1)';
+                document.body.style.opacity = '0';
+            }, 1500);
+
+            // 6) 淡出基本完成时跳转
+            setTimeout(() => {
+                window.location.href = '/posts/';
+            }, 2050);
+        }
+
+        // === 触发器 ===
+        document.addEventListener('click', (e) => {
+            shatter(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                shatter(window.innerWidth / 2, window.innerHeight / 2);
+            }
+        });
+
+        window.addEventListener('wheel', (e) => {
+            if (isShattering) return;
+            if (e.deltaY > 0) {
+                scrollAccumulator += e.deltaY;
+                if (scrollAccumulator > 80) {
+                    shatter(window.innerWidth / 2, window.innerHeight / 2);
+                }
+            }
+        }, { passive: true });
+
+        // 触摸（移动端）
+        let touchStartY = 0;
+        let touchStartX = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            if (isShattering) return;
+            const dy = touchStartY - e.touches[0].clientY;
+            if (dy > 60) shatter(touchStartX, touchStartY);
+        }, { passive: true });
+    </script>
+
+    <style is:global>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #050507;
+        }
+
+        body.cover-body {
+            font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+            color: #f5f5f5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .cover-stage {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #050507;
+        }
+
+        .cover-content {
+            position: absolute;
+            inset: 0;
+            transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .cover-content.shattered {
+            opacity: 0;
+        }
+
+        .bg-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(0, 0, 0, 0.55) 0%,
+                rgba(0, 0, 0, 0.15) 35%,
+                rgba(0, 0, 0, 0.25) 65%,
+                rgba(0, 0, 0, 0.85) 100%
+            );
+            z-index: 1;
+        }
+
+        .vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 30%,
+                rgba(0, 0, 0, 0.55) 100%
+            );
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .paper-grain {
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.94  0 0 0 0 0.88  0 0 0 0 0.74  0 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+            background-size: 200px 200px;
+            mix-blend-mode: overlay;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .content {
+            position: relative;
+            z-index: 4;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        /* .title-block 入场动画已经在 <head> 全局禁用，统一由遮罩淡出处理 */
+
+        .author-line {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: 1rem;
+            letter-spacing: 0.4em;
+            opacity: 0.8;
+            margin: 0 0 1.8rem 0;
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .title {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: clamp(3.5rem, 11vw, 8rem);
+            font-weight: 500;
+            margin: 0;
+            letter-spacing: 0.05em;
+            text-shadow: 0 4px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 0, 0, 0.4);
+            line-height: 1.05;
+            color: #fafafa;
+            font-style: italic;
+        }
+
+        .subtitle {
+            font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+            font-size: clamp(1rem, 1.8vw, 1.4rem);
+            margin: 1.8rem 0 0 0;
+            opacity: 0.85;
+            letter-spacing: 0.4em;
+            font-style: italic;
+            font-weight: 400;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        /* === 玻璃碎片：3D 透视舞台（强透视让碎片立体感更强） === */
+        .shards-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 100;
+            perspective: 900px;
+            perspective-origin: 50% 50%;
+            transform-style: preserve-3d;
+        }
+
+        .shard {
+            position: absolute;
+            inset: 0;
+            background-repeat: no-repeat;
+            opacity: 1;
+            transform: translate3d(0, 0, 0) rotate3d(1, 1, 0, 0deg);
+            transform-style: preserve-3d;
+            /* 翻过 90° 隐去背面，避免镜像内容闪烁 */
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transition-property: transform, opacity;
+            transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform, opacity;
+            /*
+             * 玻璃晶体边缘（精简到 3 层，减轻 GPU 负担降低闪烁）：
+             * 1. 锐白描边
+             * 2. 冷青色散
+             * 3. 长投影
+             */
+            filter:
+                drop-shadow(0 0 0.6px rgba(255, 255, 255, 1))
+                drop-shadow(0 0 2.5px rgba(160, 220, 255, 0.5))
+                drop-shadow(2px 5px 10px rgba(0, 0, 0, 0.7));
+        }
+
+        .shards-container.shattered .shard {
+            opacity: 0;
+            transform:
+                translate3d(var(--drift-x, 0), var(--drift-y, 0), var(--drift-z, 0))
+                rotateX(var(--rot-x, 0deg))
+                rotateY(var(--rot-y, 0deg))
+                rotateZ(var(--rot-z, 0deg));
+        }
+
+        /* === 反向遮罩：反向进入时盖住封面，再淡出 === */
+        .reverse-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 200;
+            background: #050507;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* === 裂纹层：碎裂前一瞬的白色裂痕 === */
+        .cracks-overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 101;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease-out;
+            filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.7));
+        }
+        .cracks-overlay.visible {
+            opacity: 1;
+            transition: opacity 0.08s ease-in;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .title { letter-spacing: 0.08em; }
+            .subtitle { letter-spacing: 0.25em; }
+            .author-line { letter-spacing: 0.4em; }
+        }
+    </style>
+</body>
+</html>

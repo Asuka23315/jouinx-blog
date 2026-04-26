@@ -1,0 +1,40 @@
+---
+import PostPage from "../components/PostPage.astro";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { getSortedPosts } from "../utils/content-utils";
+import I18nKey from "../i18n/i18nKey";
+import { i18n } from "../i18n/translation";
+
+const posts = await getSortedPosts();
+
+const page = {
+    data: posts,
+    start: 0,
+    end: Math.max(0, posts.length - 1),
+    size: posts.length,
+    total: posts.length,
+    currentPage: 1,
+    lastPage: 1,
+    url: {
+        current: "/posts/",
+        prev: undefined,
+        next: undefined,
+    },
+};
+
+const isDev = import.meta.env.DEV;
+---
+
+<MainGridLayout title={i18n(I18nKey.home)}>
+    {isDev && (
+        <a
+            href="/write/"
+            class="write-entry onload-animation group flex items-center justify-center gap-3 mb-4 px-6 py-5 rounded-[var(--radius-large)] border border-dashed border-black/20 dark:border-white/20 hover:border-[var(--primary)] dark:hover:border-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all"
+            style="animation-delay: var(--content-delay);"
+        >
+            <span class="text-2xl text-black/40 dark:text-white/40 group-hover:text-[var(--primary)] transition-colors leading-none">+</span>
+            <span class="text-base font-bold text-black/70 dark:text-white/70 group-hover:text-[var(--primary)] transition-colors">写一篇</span>
+        </a>
+    )}
+    <PostPage page={page}></PostPage>
+</MainGridLayout>
