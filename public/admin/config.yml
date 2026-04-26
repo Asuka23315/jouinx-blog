@@ -7,7 +7,7 @@ local_backend: true
 
 backend:
   name: github
-  repo: yourname/jouinx-blog # TODO 部署上线时把这里改成你的 GitHub 仓库
+  repo: Asuka23315/jouinx-blog
   branch: main
 
 # 媒体上传位置（封面图、文章里插的图等）
