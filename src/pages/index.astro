@@ -12,6 +12,8 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     <meta name="generator" content={Astro.generator} />
     <title>{pageTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 预加载主页文档，碎裂时已在缓存里 -->
+    <link rel="prefetch" href="/posts/" />
 
     <!-- 字体提前加载 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -71,7 +73,7 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             revealed = true;
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    overlay.style.transition = 'opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1)';
+                    overlay.style.transition = 'opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
                     overlay.style.opacity = '0';
                 });
             });
@@ -82,7 +84,8 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
         } else if (bgImage) {
             bgImage.addEventListener('load', reveal, { once: true });
             bgImage.addEventListener('error', reveal, { once: true });
-            setTimeout(reveal, 800);
+            // 图很小（~80KB），250ms 几乎肯定够；超时也直接显示
+            setTimeout(reveal, 250);
         } else {
             reveal();
         }
@@ -284,8 +287,8 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
                 const rotZ = (Math.random() - 0.5) * 35;
                 const rotX = (Math.random() - 0.5) * 100;        // 大幅上下翻转
                 const rotY = (Math.random() - 0.5) * 100;        // 大幅左右翻转
-                const delay = Math.random() * 200;
-                const duration = 1700 + Math.random() * 600;     // 1.7-2.3s，从容飘散
+                const delay = Math.random() * 150;
+                const duration = 1000 + Math.random() * 400;     // 1.0-1.4s，紧凑利落
 
                 div.style.setProperty('--drift-x', `${ux * driftAmount}px`);
                 div.style.setProperty('--drift-y', `${uy * driftAmount + liftAmount}px`);
@@ -310,14 +313,14 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
 
             // 5) 碎片飞了大半时，整页开始平滑淡出，避免硬切
             setTimeout(() => {
-                document.body.style.transition = 'opacity 0.55s cubic-bezier(0.4, 0, 0.6, 1)';
+                document.body.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.6, 1)';
                 document.body.style.opacity = '0';
-            }, 1500);
+            }, 800);
 
             // 6) 淡出基本完成时跳转
             setTimeout(() => {
                 window.location.href = '/posts/';
-            }, 2050);
+            }, 1200);
         }
 
         // === 触发器 ===

@@ -101,6 +101,9 @@ const bannerOffset =
 
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
+
+		<!-- 预加载封面文档，"主页 → 封面"瞬间响应 -->
+		{!isHomePage && <link rel="prefetch" href={url('/')} />}
 		{favicons.map(favicon => (
 			<link rel="icon"
 				  href={favicon.src.startsWith('/') ? url(favicon.src) : favicon.src}
