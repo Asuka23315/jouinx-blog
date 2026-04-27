@@ -1,4 +1,41 @@
 .custom-md {
+    /* 文学随笔气质：西文 Cormorant Garamond + 中文 Noto Serif SC，浏览器按字符自动 fallback */
+    font-family: 'Cormorant Garamond', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
+    font-size: 1.075rem;
+    line-height: 1.95;
+    letter-spacing: 0.012em;
+    /* CJK 标点压缩，让中英混排更紧凑 */
+    text-spacing-trim: trim-start;
+
+    /* 段落之间多点呼吸 */
+    p {
+        margin-top: 1.1em;
+        margin-bottom: 1.1em;
+        text-align: justify;
+        text-justify: inter-ideograph;
+        hyphens: auto;
+    }
+
+    /* 第一段第一字下沉（西式装饰首字母传统，CJK 也好看） */
+    > p:first-of-type::first-letter {
+        font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+        font-weight: 500;
+        float: left;
+        font-size: 3.4em;
+        line-height: 0.92;
+        padding: 0.08em 0.12em 0 0;
+        color: var(--primary);
+    }
+
+    /* 文章里的标题也走衬线，全篇气质统一 */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Cormorant Garamond', 'Noto Serif SC', 'Source Han Serif SC', serif;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    h2 { @apply mt-12 mb-4; }
+    h3 { @apply mt-8 mb-3; }
+
     h1 {
         @apply text-3xl;
     }
@@ -98,18 +135,42 @@
     }
 
     blockquote {
-        @apply not-italic border-transparent relative;
+        @apply border-transparent relative;
+        font-style: italic;
         font-weight: inherit;
+        font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+        font-size: 1.08em;
+        color: var(--tw-prose-body);
+        opacity: 0.92;
+        padding-left: 1.6em;
+        padding-right: 0.5em;
+        margin: 1.6em 0;
 
+        /* 左侧紫色细条 */
         &:before {
-            @apply content-[''] absolute -left-1 block transition bg-[var(--btn-regular-bg)] h-full w-1 rounded-full;
+            @apply content-[''] absolute left-0 top-1 bottom-1 block transition bg-[var(--primary)] w-[3px] rounded-full;
+            opacity: 0.7;
         }
 
-        /* Remove the double quotes from default styles */
+        /* 装饰性大引号，浮在左上角 */
+        &:after {
+            content: '\201C';
+            position: absolute;
+            left: 0.4em;
+            top: -0.4em;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.2em;
+            line-height: 1;
+            color: var(--primary);
+            opacity: 0.18;
+            font-style: normal;
+            pointer-events: none;
+        }
+
+        /* 移除 prose 默认的双引号 */
         p:before, p:after {
             @apply content-none;
         }
-
     }
 
     .katex-display-container {
