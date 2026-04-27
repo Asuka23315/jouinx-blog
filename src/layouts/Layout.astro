@@ -299,6 +299,9 @@ function loadHue() {
 function initCustomScrollbar() {
 	const bodyElement = document.querySelector('body');
 	if (!bodyElement) return;
+	// 触摸设备（手机/平板）跳过：OverlayScrollbars 会接管 body 的 touch 事件，
+	// 导致移动端无法用手指滚动整页。手机本来也看不到滚动条，不需要美化。
+	if (window.matchMedia('(pointer: coarse)').matches) return;
 	OverlayScrollbars(
 		// docs say that a initialization to the body element would affect native functionality like window.scrollTo
 		// but just leave it here for now
