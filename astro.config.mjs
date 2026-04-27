@@ -27,7 +27,7 @@ import { savePostPlugin } from "./src/plugins/save-post-middleware.ts";
 
 // https://astro.build/config
 export default defineConfig({
-	site: "https://fuwari.vercel.app/",
+	site: "https://jouinx-blog.vercel.app/",
 	base: "/",
 	trailingSlash: "always",
 	legacy: {
