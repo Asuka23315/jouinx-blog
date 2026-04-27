@@ -30,6 +30,13 @@ export default defineConfig({
 	site: "https://fuwari.vercel.app/",
 	base: "/",
 	trailingSlash: "always",
+	legacy: {
+		// Astro 5 默认要求 content collections 用 loader 写法,
+		// 但我们代码里很多地方还用 entry.slug(老 API)。
+		// 开兼容模式让 schema-only collection 继续工作,顺便修复
+		// "目录原本为空时新写入文件 HMR 不刷新" 的缓存 bug。
+		collections: true,
+	},
 	integrations: [
 		tailwind({
 			nesting: true,

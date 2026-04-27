@@ -16,7 +16,7 @@ const isDev = import.meta.env.DEV;
             </div>
         )}
 
-        <h1 class="font-bold text-2xl md:text-3xl text-black/90 dark:text-white/90 mb-6">写一篇</h1>
+        <h1 id="page-heading" class="font-bold text-2xl md:text-3xl text-black/90 dark:text-white/90 mb-6">写一篇</h1>
 
         <form id="write-form" class="space-y-5">
             <!-- 标题 -->
@@ -65,6 +65,15 @@ const isDev = import.meta.env.DEV;
                         id="f-tags"
                         type="text"
                         placeholder="拉康, 享乐, 主体"
+                        class="mt-1 w-full input-pill"
+                    />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-xs uppercase tracking-widest text-black/50 dark:text-white/50">作者（留空则用站点默认）</label>
+                    <input
+                        id="f-author"
+                        type="text"
+                        placeholder="le Jinxé"
                         class="mt-1 w-full input-pill"
                     />
                 </div>
@@ -201,6 +210,7 @@ const isDev = import.meta.env.DEV;
     const $published = document.getElementById("f-published") as HTMLInputElement;
     const $category = document.getElementById("f-category") as HTMLInputElement;
     const $tags = document.getElementById("f-tags") as HTMLInputElement;
+    const $author = document.getElementById("f-author") as HTMLInputElement;
     const $description = document.getElementById("f-description") as HTMLTextAreaElement;
     const $draft = document.getElementById("f-draft") as HTMLInputElement;
     const $body = document.getElementById("f-body") as HTMLTextAreaElement;
@@ -276,6 +286,7 @@ const isDev = import.meta.env.DEV;
             if (d.published) $published.value = d.published;
             if (d.category) $category.value = d.category;
             if (d.tags) $tags.value = d.tags;
+            if (d.author) $author.value = d.author;
             if (d.description) $description.value = d.description;
             if (typeof d.draft === "boolean") $draft.checked = d.draft;
             if (d.body) $body.value = d.body;
@@ -289,6 +300,7 @@ const isDev = import.meta.env.DEV;
             published: $published.value,
             category: $category.value,
             tags: $tags.value,
+            author: $author.value,
             description: $description.value,
             draft: $draft.checked,
             body: $body.value,
@@ -300,13 +312,57 @@ const isDev = import.meta.env.DEV;
     function clearLocalDraft() {
         try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     }
-    loadDraft();
 
-    // 每次输入自动存到 localStorage
-    [$title, $slug, $published, $category, $tags, $description, $body].forEach((el) => {
-        el.addEventListener("input", saveLocalDraft);
-    });
-    $draft.addEventListener("change", saveLocalDraft);
+    // ============ 编辑模式 ============
+    // ?slug=xxx 进入时,从 /api/load-post/ 拉数据填表,跳过 localStorage 草稿。
+    // originalSlug 记下进入时的 slug,提交时如果 slug 变了就先删旧文件再写新的(=重命名)。
+    const editingSlug = new URLSearchParams(window.location.search).get("slug");
+    let originalSlug = "";
+    const $heading = document.getElementById("page-heading") as HTMLElement;
+
+    async function loadForEdit(slug: string) {
+        $status.textContent = "正在加载文章…";
+        try {
+            const res = await fetch(`/api/load-post/?slug=${encodeURIComponent(slug)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+            $title.value = data.title || "";
+            $slug.value = data.slug || slug;
+            slugTouched = true; // 防止改标题时把 slug 自动覆盖
+            if (data.published) $published.value = data.published;
+            $category.value = data.category || "";
+            $tags.value = Array.isArray(data.tags) ? data.tags.join(", ") : "";
+            $author.value = data.author || "";
+            $description.value = data.description || "";
+            $draft.checked = data.draft === true;
+            $body.value = data.body || "";
+
+            originalSlug = data.slug || slug;
+            $heading.textContent = `编辑《${data.title || slug}》`;
+            document.title = `编辑 ${data.title || slug} - Jouïnx`;
+            $status.textContent = "";
+            updatePreview();
+        } catch (e) {
+            $status.textContent = `加载失败:${e instanceof Error ? e.message : String(e)}`;
+            $status.style.color = "rgb(252, 165, 165)";
+        }
+    }
+
+    if (editingSlug) {
+        loadForEdit(editingSlug);
+    } else {
+        loadDraft();
+    }
+
+    // 每次输入自动存到 localStorage —— 只在新建模式下做,
+    // 编辑模式不污染草稿空间(否则会覆盖另一篇正在写的草稿)
+    if (!editingSlug) {
+        [$title, $slug, $published, $category, $tags, $author, $description, $body].forEach((el) => {
+            el.addEventListener("input", saveLocalDraft);
+        });
+        $draft.addEventListener("change", saveLocalDraft);
+    }
 
     // 收集表单数据
     function collectFormData(forceDraft = false) {
@@ -321,6 +377,7 @@ const isDev = import.meta.env.DEV;
             description: $description.value.trim(),
             tags: tagList,
             category: $category.value.trim(),
+            author: $author.value.trim(),
             draft: forceDraft ? true : $draft.checked,
             body: $body.value,
         };
@@ -330,6 +387,20 @@ const isDev = import.meta.env.DEV;
         $status.textContent = `正在${label}…`;
         $status.style.color = "";
         try {
+            // 编辑模式下如果改了 slug,先删旧文件(=重命名)
+            const isRename = originalSlug && originalSlug !== payload.slug;
+            if (isRename) {
+                const delRes = await fetch("/api/delete-post/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ slug: originalSlug }),
+                });
+                if (!delRes.ok) {
+                    const j = await delRes.json().catch(() => ({}));
+                    throw new Error(`重命名失败:旧文件 ${originalSlug} 删不掉(${j.error || delRes.status})`);
+                }
+            }
+
             const res = await fetch("/api/save-post/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -341,8 +412,10 @@ const isDev = import.meta.env.DEV;
             }
             $status.textContent = `已${label} → ${json.slug}.md`;
             $status.style.color = "rgb(134, 239, 172)";
-            clearLocalDraft();
-            // 跳到新文章
+            // 编辑模式不动 localStorage(那是新建用的草稿空间)
+            if (!editingSlug) clearLocalDraft();
+            originalSlug = json.slug; // 保存成功后更新基线,允许继续编辑同一篇
+            // 跳到文章页(草稿不跳)
             if (!payload.draft) {
                 setTimeout(() => {
                     window.location.href = `/posts/${json.slug}/`;

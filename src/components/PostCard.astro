@@ -46,6 +46,13 @@ const isDev = import.meta.env.DEV;
 ---
 <div class:list={["card-base flex flex-col-reverse md:flex-col w-full rounded-[var(--radius-large)] overflow-hidden relative", className]} style={style}>
     {isDev && (
+        <a
+            href={`/write/?slug=${encodeURIComponent(entry.slug)}`}
+            class="post-edit-btn"
+            aria-label={`编辑文章: ${title}`}
+            title="编辑文章"
+            data-no-swup
+        >✎</a>
         <button
             type="button"
             class="post-delete-btn"
@@ -119,10 +126,10 @@ const isDev = import.meta.env.DEV;
 <div class="transition border-t-[1px] border-dashed mx-6 border-black/10 dark:border-white/[0.15] last:border-t-0 md:hidden"></div>
 
 <style define:vars={{coverWidth}}>
+    .post-edit-btn,
     .post-delete-btn {
         position: absolute;
         top: 0.5rem;
-        right: 0.5rem;
         z-index: 30;
         width: 1.75rem;
         height: 1.75rem;
@@ -132,17 +139,33 @@ const isDev = import.meta.env.DEV;
         border-radius: 9999px;
         background: rgba(0, 0, 0, 0.35);
         color: rgba(255, 255, 255, 0.75);
-        font-size: 1.1rem;
         line-height: 1;
-        font-weight: 300;
         cursor: pointer;
         opacity: 0;
         transition: opacity 0.2s, background 0.2s, color 0.2s, transform 0.15s;
         border: 1px solid rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(6px);
+        text-decoration: none;
     }
+    .post-edit-btn {
+        right: 2.5rem;
+        font-size: 0.95rem;
+        font-weight: 400;
+    }
+    .post-delete-btn {
+        right: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 300;
+    }
+    :global(.card-base:hover) .post-edit-btn,
     :global(.card-base:hover) .post-delete-btn {
         opacity: 1;
+    }
+    .post-edit-btn:hover {
+        background: var(--primary);
+        color: white;
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: scale(1.08);
     }
     .post-delete-btn:hover {
         background: rgba(220, 38, 38, 0.85);
@@ -150,6 +173,7 @@ const isDev = import.meta.env.DEV;
         border-color: rgba(255, 255, 255, 0.3);
         transform: scale(1.08);
     }
+    .post-edit-btn:active,
     .post-delete-btn:active {
         transform: scale(0.92);
     }
