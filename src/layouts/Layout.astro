@@ -73,9 +73,7 @@ const bannerOffset =
 ---
 
 <!DOCTYPE html>
-<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]"
-	  data-overlayscrollbars-initialize
->
+<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]">
 	<head>
 
 		<title>{pageTitle}</title>
@@ -158,9 +156,7 @@ const bannerOffset =
 		<link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`}/>
 
 	</head>
-	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}
-		  data-overlayscrollbars-initialize
-	>
+	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}>
 		<ConfigCarrier></ConfigCarrier>
 		<slot />
 
@@ -297,27 +293,8 @@ function loadHue() {
 }
 
 function initCustomScrollbar() {
-	const bodyElement = document.querySelector('body');
-	if (!bodyElement) return;
-	// 触摸设备（手机/平板）跳过：OverlayScrollbars 会接管 body 的 touch 事件，
-	// 导致移动端无法用手指滚动整页。手机本来也看不到滚动条，不需要美化。
-	if (window.matchMedia('(pointer: coarse)').matches) return;
-	OverlayScrollbars(
-		// docs say that a initialization to the body element would affect native functionality like window.scrollTo
-		// but just leave it here for now
-		{
-			target: bodyElement,
-			cancel: {
-				nativeScrollbarsOverlaid: true,    // don't initialize the overlay scrollbar if there is a native one
-			}
-		}, {
-		scrollbars: {
-			theme: 'scrollbar-base scrollbar-auto py-1',
-			autoHide: 'move',
-			autoHideDelay: 500,
-			autoHideSuspend: false,
-		},
-	});
+	// 不再用 OverlayScrollbars 接管 body / html 滚动 —— 它会破坏移动端的原生触摸滚动。
+	// 全平台改用浏览器原生滚动条；这里仅保留函数空壳，让 swup 钩子的现有调用不报错。
 
 	const katexElements = document.querySelectorAll('.katex-display') as NodeListOf<HTMLElement>;
 
