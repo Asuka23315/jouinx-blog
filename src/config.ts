@@ -91,3 +91,20 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	// Please select a dark theme, as this blog theme currently only supports dark background color
 	theme: "github-dark",
 };
+
+// Giscus 评论配置（基于 GitHub Discussions）
+// 1. 在 GitHub 仓库 Settings → General → Features 里勾选 Discussions
+// 2. 安装 https://github.com/apps/giscus 到本仓库
+// 3. 去 https://giscus.app/zh-CN 填写仓库，选择映射方式 pathname 和分类 General/Comments
+//    页面会生成 data-repo-id 和 data-category-id，把它们填到下面
+export const giscusConfig = {
+	enable: true,
+	repo: "Asuka23315/jouinx-blog" as `${string}/${string}`,
+	repoId: "REPLACE_WITH_REPO_ID",
+	category: "Comments",
+	categoryId: "REPLACE_WITH_CATEGORY_ID",
+	mapping: "pathname", // 文章路径作为 Discussion 标识
+	lang: "zh-CN",
+	reactionsEnabled: "1",
+	inputPosition: "bottom" as "top" | "bottom",
+};

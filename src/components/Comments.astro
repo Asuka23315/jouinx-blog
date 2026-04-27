@@ -1,0 +1,76 @@
+---
+import { giscusConfig } from "../config";
+
+// 没填 ID 时静默不渲染，避免线上看到 giscus 报错
+const ready =
+    giscusConfig.enable &&
+    giscusConfig.repoId !== "REPLACE_WITH_REPO_ID" &&
+    giscusConfig.categoryId !== "REPLACE_WITH_CATEGORY_ID";
+---
+
+{ready && (
+    <div class="card-base px-6 md:px-9 py-6 mb-4 onload-animation">
+        <div id="giscus-container" data-pagefind-ignore="all"></div>
+    </div>
+
+    <script is:inline define:vars={{ cfg: giscusConfig }}>
+        function giscusTheme() {
+            return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        }
+
+        function loadGiscus() {
+            const container = document.getElementById('giscus-container');
+            if (!container) return;
+            // Swup 切页之后容器是新的；老容器里的 iframe 已经随旧 main 销毁
+            container.innerHTML = '';
+            const s = document.createElement('script');
+            s.src = 'https://giscus.app/client.js';
+            s.async = true;
+            s.crossOrigin = 'anonymous';
+            s.setAttribute('data-repo', cfg.repo);
+            s.setAttribute('data-repo-id', cfg.repoId);
+            s.setAttribute('data-category', cfg.category);
+            s.setAttribute('data-category-id', cfg.categoryId);
+            s.setAttribute('data-mapping', cfg.mapping);
+            s.setAttribute('data-strict', '0');
+            s.setAttribute('data-reactions-enabled', cfg.reactionsEnabled);
+            s.setAttribute('data-emit-metadata', '0');
+            s.setAttribute('data-input-position', cfg.inputPosition);
+            s.setAttribute('data-theme', giscusTheme());
+            s.setAttribute('data-lang', cfg.lang);
+            container.appendChild(s);
+        }
+
+        // 主题切换时让已渲染的 iframe 跟着切
+        function syncGiscusTheme() {
+            const iframe = document.querySelector('iframe.giscus-frame');
+            if (!iframe || !iframe.contentWindow) return;
+            iframe.contentWindow.postMessage(
+                { giscus: { setConfig: { theme: giscusTheme() } } },
+                'https://giscus.app'
+            );
+        }
+
+        // 监听 <html class="dark"> 的切换
+        const themeObserver = new MutationObserver(syncGiscusTheme);
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+
+        // 首屏加载
+        loadGiscus();
+
+        // Swup 切到下一篇文章时，重建评论
+        const wireSwup = () => {
+            if (window.swup && window.swup.hooks && !window.__giscusSwupWired) {
+                window.__giscusSwupWired = true;
+                window.swup.hooks.on('page:view', () => {
+                    if (document.getElementById('giscus-container')) loadGiscus();
+                });
+            }
+        };
+        wireSwup();
+        document.addEventListener('swup:enable', wireSwup);
+    </script>
+)}
