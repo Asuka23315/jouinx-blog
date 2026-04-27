@@ -456,7 +456,11 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     </script>
 
     <style is:global>
-        html, body {
+        /* 这段 is:global 会被打包到一个所有页面都加载的 CSS 文件里，
+           所以必须用 body.cover-body 限定作用域，否则文章页的 html/body
+           也会被锁成 height:100% / overflow:hidden 导致整站没法滚动。 */
+        html:has(body.cover-body),
+        body.cover-body {
             margin: 0;
             padding: 0;
             width: 100%;
