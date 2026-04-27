@@ -173,6 +173,8 @@ const mainPanelTop = siteConfig.banner.enable
     .page-bg-overlay {
         position: absolute;
         inset: 0;
+        /* 让触摸事件穿透到下层内容，否则手机上整页无法滚动 */
+        pointer-events: none;
         /* 上下偏暗、中间稍透，保证文字可读且氛围感强 */
         background:
             linear-gradient(
