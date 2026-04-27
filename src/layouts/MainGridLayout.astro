@@ -67,7 +67,12 @@ const mainPanelTop = siteConfig.banner.enable
 </div>}
 
 <!-- Main content -->
-<div class="absolute w-full z-30 pointer-events-none" style={`top: ${mainPanelTop}`}>
+<!--
+  改用 position: relative 让主面板留在文档流里，body 才会随内容自然撑高、原生滚动才会工作。
+  之前 position: absolute 会导致桌面端只能靠 OverlayScrollbars 模拟滚动，移动端则被库劫持
+  touch 事件失效。padding-top 用来还原以前 top:5.5rem 减去 top-row（4.5rem）的视觉间距。
+-->
+<div class="relative w-full z-30 pointer-events-none" style={`padding-top: calc(${mainPanelTop} - 4.5rem)`}>
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div class="relative max-w-[var(--page-width)] mx-auto pointer-events-auto">
         <div id="main-grid" class="transition duration-700 w-full left-0 right-0 grid grid-cols-[17.5rem_auto] grid-rows-[auto_1fr_auto] lg:grid-rows-[auto]
