@@ -43,12 +43,10 @@ const mainPanelTop = siteConfig.banner.enable
 
 <Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle}>
 
-<!-- 页面动态背景视频 -->
+<!-- 页面背景：静态图 + 雨滴 canvas 层 -->
 <div class="page-bg-wrap" aria-hidden="true">
-    <video class="page-bg-video" autoplay muted loop playsinline preload="metadata"
-           disablepictureinpicture disableRemotePlayback>
-        <source src="/background.mp4" type="video/mp4" />
-    </video>
+    <img class="page-bg-video" src="/background.jpg" alt="" decoding="async" />
+    <canvas class="rain-canvas" id="rain-canvas"></canvas>
     <div class="page-bg-overlay"></div>
 </div>
 
@@ -162,12 +160,15 @@ const mainPanelTop = siteConfig.banner.enable
         /* 不可交互，连带防止浏览器渲染原生控件浮层 */
         pointer-events: none;
     }
-    /* 兜底：浏览器原生媒体控件覆盖层（Edge 的下载/投屏图标）藏掉 */
-    .page-bg-video::-webkit-media-controls,
-    .page-bg-video::-webkit-media-controls-enclosure,
-    .page-bg-video::-internal-media-controls-overlay-cast-button {
-        display: none !important;
-        -webkit-appearance: none !important;
+    .rain-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        /* 让雨滴在图上叠加得更亮一些 */
+        mix-blend-mode: screen;
+        opacity: 0.7;
     }
     .page-bg-overlay {
         position: absolute;
@@ -182,5 +183,88 @@ const mainPanelTop = siteConfig.banner.enable
                 rgba(0, 0, 0, 0.75) 100%
             );
     }
+    @media (prefers-reduced-motion: reduce) {
+        .rain-canvas { display: none; }
+    }
 </style>
+
+<script>
+    // === 背景雨滴特效 ===
+    type Drop = { x: number; y: number; len: number; speed: number; alpha: number };
+
+    const canvas = document.getElementById('rain-canvas') as HTMLCanvasElement | null;
+    if (canvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            let drops: Drop[] = [];
+            let dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const SLANT = 0.18; // 略微倾斜，营造风的感觉
+
+            const sizeCanvas = () => {
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                canvas.width = Math.floor(w * dpr);
+                canvas.height = Math.floor(h * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                // 按面积控制密度，桌面 ~250 滴，手机更少
+                const target = Math.floor((w * h) / 9000);
+                if (drops.length < target) {
+                    while (drops.length < target) drops.push(makeDrop(w, h, true));
+                } else {
+                    drops = drops.slice(0, target);
+                }
+            };
+
+            function makeDrop(w: number, h: number, anywhere: boolean): Drop {
+                return {
+                    x: Math.random() * w,
+                    y: anywhere ? Math.random() * h : -20,
+                    len: 8 + Math.random() * 16,
+                    speed: 4 + Math.random() * 7,
+                    alpha: 0.25 + Math.random() * 0.55,
+                };
+            }
+
+            let running = true;
+            const tick = () => {
+                if (!running) return;
+                const w = canvas.clientWidth;
+                const h = canvas.clientHeight;
+                ctx.clearRect(0, 0, w, h);
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = 'rgb(190, 210, 240)';
+                ctx.lineWidth = 1;
+                for (const d of drops) {
+                    ctx.globalAlpha = d.alpha;
+                    ctx.beginPath();
+                    ctx.moveTo(d.x, d.y);
+                    ctx.lineTo(d.x - d.len * SLANT, d.y - d.len);
+                    ctx.stroke();
+                    d.y += d.speed;
+                    d.x += d.speed * SLANT;
+                    if (d.y - d.len > h) {
+                        d.y = -d.len;
+                        d.x = Math.random() * w;
+                    }
+                }
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(tick);
+            };
+
+            sizeCanvas();
+            window.addEventListener('resize', sizeCanvas);
+            // 标签页隐藏时停止动画，省电
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    running = false;
+                } else if (!running) {
+                    running = true;
+                    requestAnimationFrame(tick);
+                }
+            });
+            requestAnimationFrame(tick);
+        }
+    }
+</script>
 </Layout>

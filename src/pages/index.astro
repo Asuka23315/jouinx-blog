@@ -34,9 +34,7 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     <div class="cover-stage" id="cover-stage">
         <!-- 原封面内容 -->
         <div class="cover-content" id="cover-content">
-            <video class="bg-video" id="bg-video" autoplay muted loop playsinline preload="metadata">
-                <source src="/hero-bg.mp4" type="video/mp4" />
-            </video>
+            <img class="bg-video" id="bg-image" src="/hero-bg.jpg" alt="" decoding="async" />
             <div class="overlay"></div>
             <div class="vignette"></div>
             <div class="paper-grain"></div>
@@ -60,13 +58,12 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     <script>
         const coverContent = document.getElementById('cover-content') as HTMLElement;
         const shardsContainer = document.getElementById('shards-container') as HTMLElement;
-        const video = document.getElementById('bg-video') as HTMLVideoElement;
+        const bgImage = document.getElementById('bg-image') as HTMLImageElement;
 
         let isShattering = false;
         let scrollAccumulator = 0;
 
-        // === 入场动画：等视频首帧准备好（或超时兜底），淡出黑色遮罩 ===
-        // 不论从哪进入（首次访问、刷新、从 /posts/ 返回），统一体验
+        // === 入场动画：等封面图准备好（或超时兜底），淡出黑色遮罩 ===
         const overlay = document.getElementById('reverse-overlay') as HTMLElement;
         let revealed = false;
         const reveal = () => {
@@ -80,12 +77,11 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             });
         };
 
-        if (video && video.readyState >= 2) {
-            // 视频缓存命中或加载够快
+        if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
             reveal();
-        } else if (video) {
-            video.addEventListener('loadeddata', reveal, { once: true });
-            // 视频加载慢的兜底，最多等 800ms
+        } else if (bgImage) {
+            bgImage.addEventListener('load', reveal, { once: true });
+            bgImage.addEventListener('error', reveal, { once: true });
             setTimeout(reveal, 800);
         } else {
             reveal();
@@ -105,10 +101,10 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             ctx.fillStyle = '#14110d';
             ctx.fillRect(0, 0, w, h);
 
-            // 把视频按 cover 模式画上去
-            if (video && video.videoWidth > 0) {
-                const vw = video.videoWidth;
-                const vh = video.videoHeight;
+            // 把封面图按 cover 模式画上去
+            if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
+                const vw = bgImage.naturalWidth;
+                const vh = bgImage.naturalHeight;
                 const vRatio = vw / vh;
                 const sRatio = w / h;
                 let dw, dh, dx, dy;
@@ -124,7 +120,7 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
                     dy = (h - dh) / 2;
                 }
                 try {
-                    ctx.drawImage(video, dx, dy, dw, dh);
+                    ctx.drawImage(bgImage, dx, dy, dw, dh);
                 } catch (e) {}
             }
 
@@ -243,7 +239,6 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             const w = window.innerWidth;
             const h = window.innerHeight;
 
-            video?.pause();
             const snapshot = captureSnapshot();
 
             const shards = generateShards(cx, cy, w, h);
