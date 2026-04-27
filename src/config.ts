@@ -100,9 +100,9 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 export const giscusConfig = {
 	enable: true,
 	repo: "Asuka23315/jouinx-blog" as `${string}/${string}`,
-	repoId: "REPLACE_WITH_REPO_ID",
-	category: "Comments",
-	categoryId: "REPLACE_WITH_CATEGORY_ID",
+	repoId: "R_kgDOSNDR8w",
+	category: "Announcements",
+	categoryId: "DIC_kwDOSNDR884C7xuL",
 	mapping: "pathname", // 文章路径作为 Discussion 标识
 	lang: "zh-CN",
 	reactionsEnabled: "1",
