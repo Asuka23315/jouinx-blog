@@ -105,10 +105,12 @@ const bannerOffset =
 		<!-- 预加载封面文档，"主页 → 封面"瞬间响应 -->
 		{!isHomePage && <link rel="prefetch" href={url('/')} />}
 
-		<!-- 文章正文衬线字体：Cormorant Garamond（西文）+ Noto Serif SC（中文） -->
+		<!-- 文章正文字体：LXGW WenKai Screen（中文楷书）+ Cormorant Garamond（西文衬线）+ Noto Serif SC 兜底 -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+SC:wght@300;400;500;700&display=swap" />
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.css" />
 		{favicons.map(favicon => (
 			<link rel="icon"
 				  href={favicon.src.startsWith('/') ? url(favicon.src) : favicon.src}
