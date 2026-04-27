@@ -9,6 +9,7 @@ backend:
   name: github
   repo: Asuka23315/jouinx-blog
   branch: main
+  base_url: https://sveltia-cms-auth.4393083.workers.dev
 
 # 媒体上传位置（封面图、文章里插的图等）
 media_folder: public/uploads
