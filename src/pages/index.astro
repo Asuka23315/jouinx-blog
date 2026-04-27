@@ -12,7 +12,6 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     <meta name="generator" content={Astro.generator} />
     <title>{pageTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" as="video" href="/hero-bg.mp4" />
 
     <!-- 字体提前加载 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,7 +34,7 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
     <div class="cover-stage" id="cover-stage">
         <!-- 原封面内容 -->
         <div class="cover-content" id="cover-content">
-            <video class="bg-video" id="bg-video" autoplay muted loop playsinline preload="auto">
+            <video class="bg-video" id="bg-video" autoplay muted loop playsinline preload="metadata">
                 <source src="/hero-bg.mp4" type="video/mp4" />
             </video>
             <div class="overlay"></div>
