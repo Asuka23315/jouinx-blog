@@ -37,6 +37,7 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
         <!-- 原封面内容 -->
         <div class="cover-content" id="cover-content">
             <img class="bg-video" id="bg-image" src="/hero-bg.jpg" alt="" decoding="async" />
+            <canvas class="ember-canvas" id="ember-canvas"></canvas>
             <div class="overlay"></div>
             <div class="vignette"></div>
             <div class="paper-grain"></div>
@@ -357,6 +358,101 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             const dy = touchStartY - e.touches[0].clientY;
             if (dy > 60) shatter(touchStartX, touchStartY);
         }, { passive: true });
+
+        // === 余烬粒子：从底部向上飘的橙色火星 ===
+        type Ember = { x: number; y: number; vx: number; vy: number; r: number; life: number; maxLife: number; hue: number };
+
+        const emberCanvas = document.getElementById('ember-canvas') as HTMLCanvasElement | null;
+        if (emberCanvas && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            const ectx = emberCanvas.getContext('2d');
+            if (ectx) {
+                let embers: Ember[] = [];
+                let edpr = Math.min(window.devicePixelRatio || 1, 2);
+
+                const sizeEmber = () => {
+                    edpr = Math.min(window.devicePixelRatio || 1, 2);
+                    const w = emberCanvas.clientWidth;
+                    const h = emberCanvas.clientHeight;
+                    emberCanvas.width = Math.floor(w * edpr);
+                    emberCanvas.height = Math.floor(h * edpr);
+                    ectx.setTransform(edpr, 0, 0, edpr, 0, 0);
+                };
+
+                function spawnEmber(w: number, h: number): Ember {
+                    const maxLife = 4000 + Math.random() * 4000;
+                    return {
+                        // 从底部 60% 区域内随机起点（呼应火光的位置）
+                        x: w * 0.1 + Math.random() * w * 0.8,
+                        y: h * (0.85 + Math.random() * 0.15),
+                        vx: (Math.random() - 0.5) * 0.25,
+                        vy: -(0.15 + Math.random() * 0.55),
+                        r: 0.8 + Math.random() * 1.6,
+                        life: 0,
+                        maxLife,
+                        hue: 18 + Math.random() * 22, // 橙偏黄
+                    };
+                }
+
+                let lastT = performance.now();
+                let runningE = true;
+                const tickEmber = (now: number) => {
+                    if (!runningE) return;
+                    const dt = Math.min(64, now - lastT);
+                    lastT = now;
+                    const w = emberCanvas.clientWidth;
+                    const h = emberCanvas.clientHeight;
+
+                    // 维持 ~60 颗左右，按面积适当增减
+                    const target = Math.floor((w * h) / 22000);
+                    while (embers.length < target) embers.push(spawnEmber(w, h));
+
+                    ectx.clearRect(0, 0, w, h);
+
+                    for (let i = embers.length - 1; i >= 0; i--) {
+                        const e = embers[i];
+                        e.life += dt;
+                        e.x += e.vx * dt * 0.06;
+                        e.y += e.vy * dt * 0.06;
+                        // 轻微侧向漂移，仿佛被气流推
+                        e.vx += (Math.random() - 0.5) * 0.01;
+                        e.vx = Math.max(-0.6, Math.min(0.6, e.vx));
+
+                        const t = e.life / e.maxLife;
+                        // 透明度先升后降，柔和
+                        const alpha = t < 0.2 ? t / 0.2 : (1 - (t - 0.2) / 0.8);
+
+                        if (t >= 1 || e.y < -10) {
+                            embers[i] = spawnEmber(w, h);
+                            continue;
+                        }
+
+                        // 主体光点 + 发光晕
+                        const grad = ectx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.r * 6);
+                        grad.addColorStop(0, `hsla(${e.hue}, 95%, 70%, ${alpha * 0.95})`);
+                        grad.addColorStop(0.4, `hsla(${e.hue}, 95%, 55%, ${alpha * 0.5})`);
+                        grad.addColorStop(1, `hsla(${e.hue}, 95%, 45%, 0)`);
+                        ectx.fillStyle = grad;
+                        ectx.beginPath();
+                        ectx.arc(e.x, e.y, e.r * 6, 0, Math.PI * 2);
+                        ectx.fill();
+                    }
+                    requestAnimationFrame(tickEmber);
+                };
+
+                sizeEmber();
+                window.addEventListener('resize', sizeEmber);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        runningE = false;
+                    } else if (!runningE) {
+                        runningE = true;
+                        lastT = performance.now();
+                        requestAnimationFrame(tickEmber);
+                    }
+                });
+                requestAnimationFrame(tickEmber);
+            }
+        }
     </script>
 
     <style is:global>
@@ -401,9 +497,31 @@ const pageTitle = `${siteConfig.title} · ${siteConfig.subtitle}`;
             min-height: 100%;
             width: auto;
             height: auto;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(1.04);
             object-fit: cover;
             z-index: 0;
+            animation: ken-burns 32s ease-in-out infinite;
+            will-change: transform;
+        }
+
+        /* 缓慢推进 + 轻微位移，让静态图也有"呼吸感" */
+        @keyframes ken-burns {
+            0%   { transform: translate(-50%, -50%) scale(1.04); }
+            50%  { transform: translate(-51.5%, -49%) scale(1.08); }
+            100% { transform: translate(-50%, -50%) scale(1.04); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .bg-video { animation: none; }
+        }
+
+        .ember-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: screen;
         }
 
         .overlay {
