@@ -4,7 +4,12 @@ const postsCollection = defineCollection({
 	schema: z.object({
 		title: z.string(),
 		published: z.date(),
-		updated: z.date().optional(),
+		// Sveltia CMS writes empty optional date fields as `''` instead of omitting them.
+		// Coerce empty/whitespace-only strings to undefined so z.date().optional() accepts them.
+		updated: z.preprocess(
+			(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+			z.date().optional(),
+		),
 		draft: z.boolean().optional().default(false),
 		description: z.string().optional().default(""),
 		image: z.string().optional().default(""),
