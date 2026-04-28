@@ -37,6 +37,9 @@ const ogImage = new URL("/og-image.jpg", Astro.site).toString();
     <!-- 预加载主页文档，碎裂时已在缓存里 -->
     <link rel="prefetch" href="/posts/" />
 
+    <!-- Vercel Web Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
+
     <!-- 字体提前加载 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
