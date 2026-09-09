@@ -96,6 +96,19 @@ collections:
         required: false
         default: ''
 
+      - label: 系列（连载/小说作品名，留空则为普通文章）
+        name: series
+        widget: string
+        required: false
+        default: ''
+
+      - label: 章节号（填写 series 后生效）
+        name: chapter
+        widget: number
+        required: false
+        value_type: int
+        min: 1
+
       - label: 作者（留空则用站点默认）
         name: author
         widget: string

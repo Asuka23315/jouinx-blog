@@ -17,6 +17,8 @@ const postsCollection = defineCollection({
 		category: z.string().optional().nullable().default(""),
 		author: z.string().optional().default(""),
 		lang: z.string().optional().default(""),
+		series: z.string().trim().optional(),
+		chapter: z.number().int().positive().optional(),
 
 		/* For internal use */
 		prevTitle: z.string().default(""),

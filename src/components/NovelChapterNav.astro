@@ -1,0 +1,71 @@
+---
+import type { NovelChapter } from "@utils/novel-utils";
+import { getNovelUrl, getPostUrlBySlug } from "@utils/url-utils";
+
+interface Props {
+	series: string;
+	currentSlug: string;
+	chapters: NovelChapter[];
+}
+
+const { series, currentSlug, chapters } = Astro.props;
+const currentIndex = chapters.findIndex((chapter) => chapter.slug === currentSlug);
+const currentPosition = currentIndex >= 0 ? currentIndex + 1 : null;
+const previousChapter = currentIndex > 0 ? chapters[currentIndex - 1] : undefined;
+const nextChapter =
+	currentIndex >= 0 && currentIndex < chapters.length - 1
+		? chapters[currentIndex + 1]
+		: undefined;
+const novelUrl = getNovelUrl(series);
+---
+
+{chapters.length > 0 && (
+	<div class="card-base px-5 md:px-7 py-5 mb-4">
+		<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-4">
+			<div class="text-xl md:text-2xl font-bold text-90">《{series}》</div>
+			{currentPosition && (
+				<div class="text-sm text-50">
+					第 {currentPosition} / {chapters.length} 章
+				</div>
+			)}
+		</div>
+
+		<nav class="flex items-stretch gap-2 md:gap-3" aria-label="小说章节导航">
+			{previousChapter ? (
+				<a
+					href={getPostUrlBySlug(previousChapter.slug)}
+					class="btn-card min-w-0 flex-1 rounded-xl px-3 md:px-4 h-12 md:h-14 flex items-center gap-2 overflow-hidden"
+				>
+					<span class="shrink-0 text-[var(--primary)]">←</span>
+					<span class="truncate text-sm md:text-base font-bold text-75">
+						{previousChapter.title}
+					</span>
+				</a>
+			) : (
+				<span class="flex-1" aria-hidden="true"></span>
+			)}
+
+			<a
+				href={novelUrl}
+				class="btn-card shrink-0 rounded-xl px-4 md:px-6 h-12 md:h-14 flex items-center justify-center text-sm md:text-base font-bold text-[var(--primary)]"
+				aria-label={`《${series}》目录`}
+			>
+				目录
+			</a>
+
+			{nextChapter ? (
+				<a
+					href={getPostUrlBySlug(nextChapter.slug)}
+					class="btn-card min-w-0 flex-1 rounded-xl px-3 md:px-4 h-12 md:h-14 flex items-center justify-end gap-2 overflow-hidden"
+				>
+					<span class="truncate text-sm md:text-base font-bold text-75">
+						{nextChapter.title}
+					</span>
+					<span class="shrink-0 text-[var(--primary)]">→</span>
+				</a>
+			) : (
+				<span class="flex-1" aria-hidden="true"></span>
+			)}
+		</nav>
+	</div>
+)}
