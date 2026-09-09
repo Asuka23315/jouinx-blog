@@ -7,6 +7,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import NovelChapterNav from "@components/NovelChapterNav.astro";
+import NovelSeriesBar from "@components/NovelSeriesBar.astro";
 import { getSortedPosts } from "@utils/content-utils";
 import { collectNovelSeries } from "@utils/novel-utils";
 import { getDir, getPostUrlBySlug } from "@utils/url-utils";
@@ -113,6 +114,15 @@ const jsonLd = {
                 ></PostMetadata>
                 {!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
             </div>
+
+            <!-- 小说系列栏：让“目录”在章节页顶部即可到达 -->
+            {novelNav && (
+                <NovelSeriesBar
+                    series={novelNav.series}
+                    currentSlug={entry.slug}
+                    chapters={novelNav.chapters}
+                ></NovelSeriesBar>
+            )}
 
             <!-- always show cover as long as it has one -->
 

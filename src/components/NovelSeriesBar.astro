@@ -1,0 +1,47 @@
+---
+import type { NovelChapter } from "@utils/novel-utils";
+import { getNovelUrl } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	class?: string;
+	style?: string;
+	series: string;
+	currentSlug: string;
+	chapters: NovelChapter[];
+}
+
+const { series, currentSlug, chapters } = Astro.props;
+const className = Astro.props.class;
+const style = Astro.props.style;
+const novelUrl = getNovelUrl(series);
+const currentIndex = chapters.findIndex((chapter) => chapter.slug === currentSlug);
+const currentPosition = currentIndex >= 0 ? currentIndex + 1 : null;
+---
+
+<div
+	class:list={[
+		"flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-dashed border-black/15 dark:border-white/15 px-4 md:px-5 py-3 mb-5 onload-animation",
+		className,
+	]}
+	style={style}
+>
+	<a
+		href={novelUrl}
+		class="min-w-0 text-sm md:text-base font-bold text-black/80 dark:text-white/80 hover:text-[var(--primary)] dark:hover:text-[var(--primary)] transition"
+	>
+		《{series}》
+		{currentPosition && (
+			<span class="ml-2 text-sm font-medium text-50">
+				第 {currentPosition} / {chapters.length} 章
+			</span>
+		)}
+	</a>
+	<a
+		href={novelUrl}
+		class="btn-regular shrink-0 rounded-xl px-4 md:px-5 h-10 md:h-11 gap-2 text-sm md:text-base font-bold"
+	>
+		<Icon class="text-lg md:text-xl" name="material-symbols:book-2-outline-rounded"></Icon>
+		目录
+	</a>
+</div>

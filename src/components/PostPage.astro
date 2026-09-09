@@ -1,28 +1,69 @@
 ---
 import type { CollectionEntry } from "astro:content";
 import { getPostUrlBySlug } from "@utils/url-utils";
+import NovelSeriesCard from "./NovelSeriesCard.astro";
 import PostCard from "./PostCard.astro";
+import type { NovelChapter } from "@utils/novel-utils";
 
-const { page } = Astro.props;
+type HomeFeedItem =
+	| {
+			kind: "post";
+			entry: CollectionEntry<"posts">;
+	  }
+	| {
+			kind: "series";
+			series: string;
+			entry: CollectionEntry<"posts">;
+			latestEntry: CollectionEntry<"posts">;
+			chapters: NovelChapter[];
+	  };
+
+interface Props {
+	page: {
+		data: CollectionEntry<"posts">[];
+	};
+	items?: HomeFeedItem[];
+}
+
+const { page, items } = Astro.props;
+
+const feedItems: HomeFeedItem[] =
+	items && items.length > 0
+		? items
+		: page.data.map((entry) => ({
+				kind: "post",
+				entry,
+			}));
 
 let delay = 0;
 const interval = 50;
 ---
 <div class="transition flex flex-col rounded-[var(--radius-large)] bg-[var(--card-bg)] py-1 md:py-0 md:bg-transparent md:gap-4 mb-4">
-    {page.data.map((entry: CollectionEntry<"posts">) => (
-        <PostCard
-                entry={entry}
-                title={entry.data.title}
-                tags={entry.data.tags}
-                category={entry.data.category}
-                published={entry.data.published}
-                updated={entry.data.updated}
-                url={getPostUrlBySlug(entry.slug)}
-                image={entry.data.image}
-                description={entry.data.description}
-                draft={entry.data.draft}
+    {feedItems.map((item) =>
+        item.kind === "post" ? (
+            <PostCard
+                entry={item.entry}
+                title={item.entry.data.title}
+                tags={item.entry.data.tags}
+                category={item.entry.data.category}
+                published={item.entry.data.published}
+                updated={item.entry.data.updated}
+                url={getPostUrlBySlug(item.entry.slug)}
+                image={item.entry.data.image}
+                description={item.entry.data.description}
+                draft={item.entry.data.draft}
                 class:list="onload-animation"
                 style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
-        ></PostCard>
-    ))}
+            ></PostCard>
+        ) : (
+            <NovelSeriesCard
+                series={item.series}
+                entry={item.entry}
+                latestEntry={item.latestEntry}
+                chapters={item.chapters}
+                class:list="onload-animation"
+                style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
+            ></NovelSeriesCard>
+        ),
+    )}
 </div>

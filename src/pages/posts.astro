@@ -2,10 +2,67 @@
 import PostPage from "../components/PostPage.astro";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { getSortedPosts } from "../utils/content-utils";
+import type { CollectionEntry } from "astro:content";
+import type { NovelChapter } from "../utils/novel-utils";
+import { collectNovelSeries } from "../utils/novel-utils";
 import I18nKey from "../i18n/i18nKey";
 import { i18n } from "../i18n/translation";
 
+type HomeFeedItem =
+	| {
+			kind: "post";
+			entry: CollectionEntry<"posts">;
+	  }
+	| {
+			kind: "series";
+			series: string;
+			entry: CollectionEntry<"posts">;
+			latestEntry: CollectionEntry<"posts">;
+			chapters: NovelChapter[];
+	  };
+
 const posts = await getSortedPosts();
+
+const novelSeriesList = collectNovelSeries(posts);
+const chaptersBySeries = new Map(
+	novelSeriesList.map((series) => [series.series, series.chapters]),
+);
+const postsBySlug = new Map<string, CollectionEntry<"posts">>(
+	posts.map((post) => [post.slug, post]),
+);
+
+const feedItems: HomeFeedItem[] = [];
+const seenSeries = new Set<string>();
+
+for (const entry of posts) {
+	const seriesName = entry.data.series?.trim();
+
+	// 只有 series + chapter 都齐全的文章才算小说章节；
+	// 只有 series 没有 chapter 的文章仍然按普通文章展示。
+	if (!seriesName || typeof entry.data.chapter !== "number") {
+		feedItems.push({ kind: "post", entry });
+		continue;
+	}
+
+	// 同一部小说在主页列表里只保留一次，并作为“系列”卡片展示。
+	if (seenSeries.has(seriesName)) continue;
+	seenSeries.add(seriesName);
+
+	const chapters = chaptersBySeries.get(seriesName) ?? [];
+	const firstChapterSlug = chapters[0]?.slug;
+	const firstChapterEntry = firstChapterSlug
+		? postsBySlug.get(firstChapterSlug)
+		: undefined;
+
+	feedItems.push({
+		kind: "series",
+		series: seriesName,
+		// 用第 1 章提供系列分类/标签，位置仍按最新一章出现。
+		entry: firstChapterEntry ?? entry,
+		latestEntry: entry,
+		chapters,
+	});
+}
 
 const page = {
     data: posts,
@@ -36,5 +93,5 @@ const isDev = import.meta.env.DEV;
             <span class="text-base font-bold text-black/70 dark:text-white/70 group-hover:text-[var(--primary)] transition-colors">写一篇</span>
         </a>
     )}
-    <PostPage page={page}></PostPage>
+    <PostPage page={page} items={feedItems}></PostPage>
 </MainGridLayout>
